@@ -22,20 +22,43 @@ const Signup = async(req , res) => {
 
 
 // Login
-const Login =  async (req, res) => {
-    try{
-
+const Login = async (req, res) => {
+    try {
         const { email, password } = req.body;
       
-        const { session } = await supabase.auth.signInWithPassword({ email, password });
-        return res.status(200).json({ message: 'Login successful', session });
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password
+        });
 
-    }catch(error){
+        console.log("Login data:", data);
+        if (error) {
+            return res.status(401).json({ 
+                error: error.message || "Authentication failed" 
+            });
+        }
+
+        if (!data || !data.session) {
+            return res.status(401).json({ 
+                error: "No session data returned" 
+            });
+        }
+
+        // Return the complete session data
+        return res.status(200).json({
+            message: 'Login successful',
+            session: {
+                access_token: data.session.access_token,
+                refresh_token: data.session.refresh_token,
+                user: data.session.user,
+                expires_at: data.session.expires_at
+            }
+        });
+
+    } catch (error) {
         console.error("Error in login:", error);
         res.status(500).json({ error: "Internal server error" });
     }
-
- 
 };
 
 // Logout

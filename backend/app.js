@@ -13,7 +13,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const upload = multer({ dest: "uploads/" });
-const AI_MODEL_URL = "https://neogen-jt0c.onrender.com/score";
+const AI_MODEL_URL = "http://192.168.1.5:10000/score";
 
 
 app.post("/api/extract-text",upload.fields([
@@ -23,8 +23,8 @@ app.post("/api/extract-text",upload.fields([
   async (req, res) => {
     try {
       const resumesRaw = req.files?.files || [];
-      const jdRaw = req.files?.jd?.[0];
-
+      const jdRaw = req.files?.jd?.[0] || null;
+      
       let extractedResumes = [];
       let jdText = "";
 
