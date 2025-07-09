@@ -1,52 +1,70 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
+import axiosInstance from "../../config/axiosInterceptorConfig";
 
-const AuthContext = createContext(null);
+const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    // Check auth status on mount
-    const authStatus = localStorage.getItem('isAuthenticated') === 'true';
-    const userData = JSON.parse(localStorage.getItem('user'));
+  const login = async (email, password) => {
+    try {
+      const response = await axiosInstance.post('/auth/login', {
+        email,
+        password
+      });
+      
+      const { session } = response.data;
     
-    if (authStatus && userData) {
+      setUser(session.user);
       setIsAuthenticated(true);
-      setUser(userData);
+      // Store the session token
+      localStorage.setItem('session', JSON.stringify(session));
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to login'
+      };
     }
-  }, []);
-
-  const login = async (userData) => {
-    return new Promise((resolve) => {
-      // Update state and localStorage
-      setIsAuthenticated(true);
-      setUser(userData);
-      localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('user', JSON.stringify(userData));
-      resolve();
-    });
   };
 
-  const logout = () => {
-    // Clear state and localStorage
-    setIsAuthenticated(false);
-    setUser(null);
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('user');
+  const signup = async (userData) => {
+    try {
+      const response = await axiosInstance.post('/auth/register', userData);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to register'
+      };
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await axiosInstance.post('/auth/log-out');
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem('session');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
+    <AuthContext.Provider value={{ 
+      isAuthenticated, 
+      user, 
+      login, 
+      signup, 
+      logout, 
+      setIsAuthenticated, 
+      setUser 
+    }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export const useAuth = () => useContext(AuthContext);

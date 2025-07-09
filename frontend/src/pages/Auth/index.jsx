@@ -136,11 +136,11 @@ const Auth = () => {
   });
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, signup } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); // Clear previous errors
+    setError('');
 
     if (isLogin) {
       // Handle login
@@ -152,10 +152,14 @@ const Auth = () => {
           position: 'HR Manager'
         };  
         await login(userData);
-        // Then navigate to dashboard
         navigate('/', { replace: true });
       } else {
-        setError('Invalid email or password');
+        const { success, error } = await login(formData.email, formData.password);
+        if (success) {
+          navigate('/', { replace: true });
+        } else {
+          setError(error);
+        }
       }
     } else {
       // Handle registration
@@ -163,7 +167,14 @@ const Auth = () => {
         setError("Passwords don't match!");
         return;
       }
-      setError('Registration is currently disabled. Please use demo credentials.');
+      
+      const { success, error } = await signup(formData);
+      if (success) {
+        setIsLogin(true);
+        setError('Registration successful! Please login.');
+      } else {
+        setError(error);
+      }
     }
   };
 

@@ -145,10 +145,16 @@ const ResumeUpload = () => {
     setError('');
     try {
       const formData = new FormData();
+      // Append resume files
       resumeFiles.forEach((file) => formData.append("files", file));
-      formData.append("jd", jdFile);
+      // Append JD file - since it's an array, take the first file
+      if (jdFile.length > 0) {
+        formData.append("jd", jdFile[0]);
+      } else {
+        throw new Error("Please upload a job description file");
+      }
 
-      const response = await axios.post("/api/extract-text", formData, {
+      const response = await axios.post("https://neohire-backend.onrender.com/api/extract-text", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -160,6 +166,9 @@ const ResumeUpload = () => {
       }, 3000);
     } catch (error) {
       console.error("Error uploading files:", error);
+      setError(error.message || "Error uploading files");
+    } finally {
+      setIsLoading(false);
     }
   };
 
